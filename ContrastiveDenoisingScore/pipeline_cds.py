@@ -9,9 +9,38 @@ from diffusers.utils import logging
 
 from utils.attention import *
 from utils.loss import *
+from datetime import datetime, timezone, timedelta
+from PIL import Image, ImageDraw
+import os
 
 logger = logging.get_logger(__name__)
+# 创建网格保存图片
+def save_images_in_grid(images, save_path, grid_size=(4, 4), img_size=(256, 256), names=None):
+    grid_width, grid_height = grid_size
+    grid_img = Image.new("RGB", (img_size[0] * grid_width, img_size[1] * grid_height))
+    
+    for i, img in enumerate(images):
+        if names:
+            img_name = names[i]
+            img = img.resize(img_size)
+            x = (i % grid_width) * img_size[0]
+            y = (i // grid_width) * img_size[1]
+            grid_img.paste(img, (x, y))
+            
+            # 在图像上写上名称
+            draw = ImageDraw.Draw(grid_img)
+            draw.text((x + 10, y + 10), img_name, fill=(255, 255, 255))
+    
+    # 定义文件名
+    file_name = "grid_image.png"
+    savepath = os.path.join(save_path, file_name)
 
+    grid_img.save(savepath, format="PNG")
+    print(f"网格图片已保存到 {savepath}")
+
+# 执行推理并保存到网格
+img_results = []
+img_names = []
 class CDSPipeline(StableDiffusionPipeline):
 
     def prepare_latents(self, batch_size, num_channels_latents, height, width, dtype, device, generator, latents=None, img_path=''):
@@ -35,6 +64,8 @@ class CDSPipeline(StableDiffusionPipeline):
         else:
             latents = latents.to(device)
         return latents
+
+    
 
     @torch.no_grad()
     def __call__(
@@ -140,6 +171,17 @@ class CDSPipeline(StableDiffusionPipeline):
 
         optimizer = optim.SGD([z_trg], lr=0.1)
 
+        # 执行推理并保存到网格
+        img_results = []
+        img_names = []
+
+        # 获取当前的日期时间并格式化为字符串（年-月-日_时-分-秒）
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        savepath=os.path.join(save_path,current_time)
+        # 如果路径不存在，则创建路径
+        if not os.path.exists(savepath):
+            os.makedirs(savepath)
+
         num_warmup_steps = num_inference_steps - num_inference_steps * self.scheduler.order
         with self.progress_bar(total=num_inference_steps) as progress_bar:
             for i in range(num_inference_steps):
@@ -213,12 +255,16 @@ class CDSPipeline(StableDiffusionPipeline):
                     img = np.concatenate((img_src, img_trg), axis=1)
                     img = Image.fromarray((img * 255).astype(np.uint8))
 
-                    if not os.path.exists(save_path):
-                        os.makedirs(save_path)
-                    img.save(os.path.join(save_path, f'{str(i).zfill(3)}.png'))
+                    img.save(os.path.join(savepath, f'{str(i).zfill(3)}.png'))
 
         result = self.decode_latents(z_trg).squeeze()
         result = Image.fromarray((result * 255).astype(np.uint8))
+        result.save(os.path.join(savepath, 'result.png'))
+        # img_results.append(result)
+        # img_names.append(os.path.basename("generate_result.png"))  # 使用文件名作为图片名称
+
+        # # 将所有生成的图片保存到网格
+        # save_images_in_grid(img_results, save_path=savepath, grid_size=(4, 4), img_size=(256, 256), names=img_names)      
 
         return result
                 
