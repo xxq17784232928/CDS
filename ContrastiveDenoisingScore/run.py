@@ -9,40 +9,7 @@ from datetime import datetime, timezone, timedelta
 from PIL import Image, ImageDraw
 import os
 
-# 创建网格保存图片
-def save_images_in_grid(images, save_path, grid_size=(4, 4), img_size=(256, 256), names=None):
-    grid_width, grid_height = grid_size
-    grid_img = Image.new("RGB", (img_size[0] * grid_width, img_size[1] * grid_height))
-    
-    for i, img in enumerate(images):
-        if names:
-            img_name = names[i]
-            img = img.resize(img_size)
-            x = (i % grid_width) * img_size[0]
-            y = (i // grid_width) * img_size[1]
-            grid_img.paste(img, (x, y))
-            
-            # 在图像上写上名称
-            draw = ImageDraw.Draw(grid_img)
-            draw.text((x + 10, y + 10), img_name, fill=(255, 255, 255))
-    
-    # 获取当前的日期时间并格式化为字符串（年-月-日_时-分-秒）
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    savepath=os.path.join(save_path,current_time)
-    # 如果路径不存在，则创建路径
-    if not os.path.exists(savepath):
-        os.makedirs(savepath)
 
-    # 定义文件名
-    file_name = "grid_image.png"
-    savepath = os.path.join(savepath, file_name)
-
-    grid_img.save(savepath, format="PNG")
-    print(f"网格图片已保存到 {savepath}")
-
-# 执行推理并保存到网格
-img_results = []
-img_names = []
 
 def main():
     parser = argparse.ArgumentParser()
@@ -91,11 +58,6 @@ def main():
             save_path=args.save_path,
         )
 
-        img_results.append(result)
-        img_names.append(os.path.basename(img_file))  # 使用文件名作为图片名称
-    
-    # 将所有生成的图片保存到网格
-    save_images_in_grid(img_results, save_path=args.save_path, grid_size=(4, 4), img_size=(256, 256), names=img_names)      
-
+       
 if __name__ == '__main__':    
     main()
