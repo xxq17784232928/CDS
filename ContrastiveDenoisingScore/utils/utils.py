@@ -8,10 +8,11 @@ from diffusers import AutoencoderKL, DDPMScheduler,  UNet2DConditionModel
 from pipeline_cds import CDSPipeline
 
 def load_model(args):
-    if not args.v5:
-        sd_version = "CompVis/stable-diffusion-v1-4"
-    else:
-        sd_version = "runwayml/stable-diffusion-v1-5"
+    # if not args.v5:
+    #     sd_version = "CompVis/stable-diffusion-v1-4"
+    # else:
+    #     sd_version = "runwayml/stable-diffusion-v1-5"
+    sd_version = "runwayml/stable-diffusion-v1-5"
 
     weight_dtype = torch.float32
     if args.torch_dtype == 'fp16':
